@@ -16,5 +16,6 @@ namespace lab7.DataAccess
 
         Task<bool> UpdateUserPremiumStatusAsync(int id, bool isPremium);
 
+        Task<Ad?> GetRandomAdAsync();
     }
 }

@@ -8,5 +8,6 @@ namespace lab7.DataAccess
         Task<Ad> GetAdByIdAsync(int id);
 
         Task<Ad> AddAdAsync(Ad ad);
+
     }
 }

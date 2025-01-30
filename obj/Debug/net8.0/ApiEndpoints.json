@@ -61,7 +61,7 @@
     ],
     "ReturnTypes": [
       {
-        "Type": "lab7.Models.User",
+        "Type": "lab7.Models.Ad",
         "MediaTypes": [
           "text/plain",
           "application/json",

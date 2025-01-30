@@ -24,16 +24,37 @@ namespace lab7.Services
             return await Repository.AddUserAsync(user);
         }
 
-        public async Task<bool> UpdateUserAsync(int id, User user)
+        //public async Task<bool> UpdateUserAsync(int id, User user)
+        //{
+        //    if (id != user.Id)
+        //    {
+        //        return false;
+        //    }
+
+        //    user.UpdatedAt = DateTime.UtcNow;
+        //    return await Repository.UpdateUserAsync(user);
+        //}
+
+        public async Task<(bool Success, User? UpdatedUser, Ad? AdToShow)> UpdateUserAsync(int id, User user)
         {
             if (id != user.Id)
             {
-                return false;
+                return (false, null, null);
             }
 
             user.UpdatedAt = DateTime.UtcNow;
-            return await Repository.UpdateUserAsync(user);
+            bool isUpdated = await Repository.UpdateUserAsync(user);
+
+            if (isUpdated && user.TrackCount > 3 && !user.IsPremium)
+            {
+                Ad? ad = await Repository.GetRandomAdAsync();
+                user.TrackCount = 0;
+                return (true, user, ad);
+            }
+
+            return (isUpdated, user, null);
         }
+
 
         public async Task<bool> SoftDeleteUserAsync(int id)
         {
@@ -44,5 +65,6 @@ namespace lab7.Services
         {
             return await Repository.UpdateUserPremiumStatusAsync(id, isPremium);
         }
+
     }
 }

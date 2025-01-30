@@ -68,5 +68,10 @@ namespace lab7.DataAccess
             await _trackContext.SaveChangesAsync();
             return true;
         }
+
+        public async Task<Ad?> GetRandomAdAsync()
+        {
+            return await _trackContext.Ad.OrderBy(r => Guid.NewGuid()).FirstOrDefaultAsync();
+        }
     }
 }

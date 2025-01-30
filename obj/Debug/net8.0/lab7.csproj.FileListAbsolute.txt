@@ -72,3 +72,7 @@ D:\University\MASTER_1\USV\PPAW\Labs\lab7\lab7\obj\Debug\net8.0\refint\lab7.dll
 D:\University\MASTER_1\USV\PPAW\Labs\lab7\lab7\obj\Debug\net8.0\lab7.pdb
 D:\University\MASTER_1\USV\PPAW\Labs\lab7\lab7\obj\Debug\net8.0\lab7.genruntimeconfig.cache
 D:\University\MASTER_1\USV\PPAW\Labs\lab7\lab7\obj\Debug\net8.0\ref\lab7.dll
+D:\University\MASTER_1\USV\PPAW\Labs\lab7\lab7\bin\Debug\net8.0\Microsoft.Extensions.Caching.StackExchangeRedis.dll
+D:\University\MASTER_1\USV\PPAW\Labs\lab7\lab7\bin\Debug\net8.0\Pipelines.Sockets.Unofficial.dll
+D:\University\MASTER_1\USV\PPAW\Labs\lab7\lab7\bin\Debug\net8.0\StackExchange.Redis.dll
+D:\University\MASTER_1\USV\PPAW\Labs\lab7\lab7\bin\Debug\net8.0\Newtonsoft.Json.dll
