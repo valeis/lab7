@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using lab7.Models;
+using lab7.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 namespace lab7.Controllers
@@ -8,66 +9,53 @@ namespace lab7.Controllers
     [ApiController]
     public class TrackController : ControllerBase
     {
-        private readonly TrackContext _trackContext;
         private readonly IMapper _mapper;
+        private readonly ITrackService _trackService;
 
-        public TrackController(TrackContext trackContext, IMapper mapper)
+        public TrackController(IMapper mapper, ITrackService trackService)
         {
-            _trackContext = trackContext;
             _mapper = mapper;
+            _trackService = trackService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Track>>> GetTracks()
         {
-            if (_trackContext.Track == null)
+            var tracks = await _trackService.GetAllTracksAsync();
+            if (tracks == null || !tracks.Any())
             {
-                return NotFound();
+                return NotFound("No tracks found");
             }
 
-            /*return await _trackContext.Track
-                .AsNoTracking()
-                .ToListAsync();*/
-
-            var tracks = await _trackContext.Track
-               .AsNoTracking()
-               .ToListAsync();
-
-            var trackDtos = _mapper.Map<List<TrackDTOModel>>(tracks);
-            return Ok(trackDtos);
+            return Ok(tracks);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<Track>> GetTrack(int id)
         {
-            if (_trackContext.Track is null)
+            var track = await _trackService.GetTrackByIdAsync(id);
+            if (track == null)
             {
-                return NotFound();
+                return NotFound("Track not found");
             }
-            var track = await _trackContext.Track.FindAsync(id);
-            if (track is null)
-            {
-                return NotFound();
-            }
-            var trackDto = _mapper.Map<TrackDTOModel>(track);
-            return Ok(trackDto);
+            return Ok(track);
         }
 
         [HttpPost]
         public async Task<ActionResult<Track>> PostTrack(Track track)
         {
-            if (_trackContext.Track == null)
+            if (track == null)
             {
-                return Problem("Entity set 'TrackContext.Track' is null.");
+                return BadRequest("Track data is invalid.");
             }
 
-            track.CreatedAt = DateTime.UtcNow;
-            track.UpdatedAt = DateTime.UtcNow;
+            var createdTrack = await _trackService.CreateTrackAsync(track);
+            if (createdTrack == null)
+            {
+                return Problem("Error occurred while creating the track.");
+            }
 
-            _trackContext.Track.Add(track);
-            await _trackContext.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetTrack), new { id = track.Id }, track);
+            return CreatedAtAction(nameof(GetTrack), new { id = createdTrack.Id }, createdTrack);
         }
 
         [HttpPut("{id}")]
@@ -75,32 +63,31 @@ namespace lab7.Controllers
         {
             if (id != track.Id)
             {
-                return BadRequest();
+                return BadRequest("Track ID mismatch.");
             }
 
-            track.UpdatedAt = DateTime.UtcNow;
-            _trackContext.Entry(track).State = EntityState.Modified;
-            _trackContext.Entry(track).Property(x => x.CreatedAt).IsModified = false;
+            var updatedTrack = await _trackService.UpdateTrackAsync(id, track);
 
-            try
+            if (updatedTrack == null)
             {
-                await _trackContext.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!TrackExists(id))
-                {
-                    return NotFound();
-                }
-                throw;
+                return NotFound("Track not found.");
             }
 
             return NoContent();
         }
 
-        private bool TrackExists(int id)
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTrack(int id)
         {
-            return (_trackContext.Track?.Any(e => e.Id == id)).GetValueOrDefault();
+            var result = await _trackService.DeleteTrackAsync(id);
+
+            if (result == null)
+            {
+                return NotFound("Track not found.");
+            }
+
+            return NoContent();
         }
     }
 }

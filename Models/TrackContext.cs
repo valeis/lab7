@@ -9,6 +9,7 @@ namespace lab7.Models
         {
         }
         public DbSet<Track> Track { get; set; }
-
+        public DbSet<User> User { get; set; }
+        public DbSet<Ad> Ad { get; set; }
     }
 }
