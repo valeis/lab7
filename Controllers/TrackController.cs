@@ -1,73 +1,79 @@
 ﻿using AutoMapper;
 using lab7.Models;
+using lab7.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
+
 namespace lab7.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class TrackController : ControllerBase
     {
-        private readonly TrackContext _trackContext;
         private readonly IMapper _mapper;
+        private readonly ITrackService _trackService;
+        private readonly ILogger<TrackController> _logger; 
 
-        public TrackController(TrackContext trackContext, IMapper mapper)
+        public TrackController(IMapper mapper, ITrackService trackService, ILogger<TrackController> logger)
         {
-            _trackContext = trackContext;
             _mapper = mapper;
+            _trackService = trackService;
+            _logger = logger; 
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Track>>> GetTracks()
         {
-            if (_trackContext.Track == null)
+            _logger.LogInformation("Fetching all tracks.");
+            var tracks = await _trackService.GetAllTracksAsync();
+
+            if (tracks == null || !tracks.Any())
             {
-                return NotFound();
+                _logger.LogWarning("No tracks found.");
+                return NotFound("No tracks found");
             }
 
-            /*return await _trackContext.Track
-                .AsNoTracking()
-                .ToListAsync();*/
-
-            var tracks = await _trackContext.Track
-               .AsNoTracking()
-               .ToListAsync();
-
-            var trackDtos = _mapper.Map<List<TrackDTOModel>>(tracks);
-            return Ok(trackDtos);
+            _logger.LogInformation("Successfully fetched {TrackCount} tracks.", tracks.Count());
+            return Ok(tracks);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<Track>> GetTrack(int id)
         {
-            if (_trackContext.Track is null)
+            _logger.LogInformation("Fetching track with ID {TrackId}.", id);
+            var track = await _trackService.GetTrackByIdAsync(id);
+
+            if (track == null)
             {
-                return NotFound();
+                _logger.LogWarning("Track with ID {TrackId} not found.", id);
+                return NotFound("Track not found");
             }
-            var track = await _trackContext.Track.FindAsync(id);
-            if (track is null)
-            {
-                return NotFound();
-            }
-            var trackDto = _mapper.Map<TrackDTOModel>(track);
-            return Ok(trackDto);
+
+            _logger.LogInformation("Successfully fetched track with ID {TrackId}.", id);
+            return Ok(track);
         }
 
         [HttpPost]
         public async Task<ActionResult<Track>> PostTrack(Track track)
         {
-            if (_trackContext.Track == null)
+            if (track == null)
             {
-                return Problem("Entity set 'TrackContext.Track' is null.");
+                _logger.LogWarning("Received invalid track data.");
+                return BadRequest("Track data is invalid.");
             }
 
-            track.CreatedAt = DateTime.UtcNow;
-            track.UpdatedAt = DateTime.UtcNow;
+            _logger.LogInformation("Creating a new track.");
+            var createdTrack = await _trackService.CreateTrackAsync(track);
 
-            _trackContext.Track.Add(track);
-            await _trackContext.SaveChangesAsync();
+            if (createdTrack == null)
+            {
+                _logger.LogError("Error occurred while creating the track.");
+                return Problem("Error occurred while creating the track.");
+            }
 
-            return CreatedAtAction(nameof(GetTrack), new { id = track.Id }, track);
+            _logger.LogInformation("Successfully created track with ID {TrackId}.", createdTrack.Id);
+            return CreatedAtAction(nameof(GetTrack), new { id = createdTrack.Id }, createdTrack);
         }
 
         [HttpPut("{id}")]
@@ -75,32 +81,37 @@ namespace lab7.Controllers
         {
             if (id != track.Id)
             {
-                return BadRequest();
+                _logger.LogWarning("Track ID mismatch: received {ReceivedId}, expected {ExpectedId}.", track.Id, id);
+                return BadRequest("Track ID mismatch.");
             }
 
-            track.UpdatedAt = DateTime.UtcNow;
-            _trackContext.Entry(track).State = EntityState.Modified;
-            _trackContext.Entry(track).Property(x => x.CreatedAt).IsModified = false;
+            _logger.LogInformation("Updating track with ID {TrackId}.", id);
+            var updatedTrack = await _trackService.UpdateTrackAsync(id, track);
 
-            try
+            if (updatedTrack == null)
             {
-                await _trackContext.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!TrackExists(id))
-                {
-                    return NotFound();
-                }
-                throw;
+                _logger.LogWarning("Track with ID {TrackId} not found for update.", id);
+                return NotFound("Track not found.");
             }
 
+            _logger.LogInformation("Successfully updated track with ID {TrackId}.", id);
             return NoContent();
         }
 
-        private bool TrackExists(int id)
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTrack(int id)
         {
-            return (_trackContext.Track?.Any(e => e.Id == id)).GetValueOrDefault();
+            _logger.LogInformation("Deleting track with ID {TrackId}.", id);
+            var result = await _trackService.DeleteTrackAsync(id);
+
+            if (result == null)
+            {
+                _logger.LogWarning("Track with ID {TrackId} not found for deletion.", id);
+                return NotFound("Track not found.");
+            }
+
+            _logger.LogInformation("Successfully deleted track with ID {TrackId}.", id);
+            return NoContent();
         }
     }
 }
